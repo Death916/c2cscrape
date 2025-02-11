@@ -1,26 +1,30 @@
-# c2cscrape.py
-# This script scrapes the zfirelight blog for old episodes of coast to coast am and serves the audio/video as an rss feed for pocketcasts
-
 import requests
 from bs4 import BeautifulSoup
-from typing import Optional
+import datetime
+import os
+import re
 
 class C2CScrape:
     def __init__(self):
         self.url = 'https://zfirelight.blogspot.com/'
         self.episodes = []
         self.last_download = None
+        self.last_download_link = None
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
 
-    def get_drive_link(self, url: str) -> Optional[str]:
+    def sanitize_filename(self, filename):
+        # Remove or replace invalid filename characters
+        return re.sub(r'[<>:"/\\|?*]', '-', filename)
+
+    def get_drive_link(self, url):
         try:
             response = requests.get(url, headers=self.headers)
             response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            self.soup = BeautifulSoup(response.text, 'html.parser')
             
-            iframes = soup.find_all('iframe')
+            iframes = self.soup.find_all('iframe')
             for iframe in iframes:
                 src = iframe.get('src')
                 if src and 'drive.google.com' in src:
@@ -30,7 +34,25 @@ class C2CScrape:
             print(f'Error fetching page: {e}')
         return None
 
-    def create_download_link(self) -> Optional[str]:
+    def get_episode_info(self, soup):
+        title_element = soup.find('h3', class_='post-title entry-title')
+        if not title_element:
+            return None
+            
+        title_link = title_element.find('a')
+        if not title_link:
+            return None
+            
+        full_title = title_link.text
+        date_str = full_title.split(' ')[0]
+        
+        return {
+            'title': full_title,
+            'date': date_str,
+            'url': title_link['href']
+        }
+
+    def create_download_link(self):
         url = self.get_drive_link(self.url)
         if not url:
             return None
@@ -45,6 +67,55 @@ class C2CScrape:
             print('Error: Invalid URL format')
             return None
 
+    def download_episode(self, url):
+        try:
+            episode_data = self.get_episode_info(self.soup)
+            if not episode_data:
+                print('Error: Could not get episode info')
+                return
+
+            # Check if already downloaded
+            date = datetime.datetime.now().strftime('%Y-%m-%d')
+            if date == self.last_download and url == self.last_download_link:
+                print('Episode already downloaded')
+                return
+
+            # Create downloads directory if it doesn't exist
+            download_dir = 'downloads'
+            os.makedirs(download_dir, exist_ok=True)
+
+            # Download the file
+            response = requests.get(url, headers=self.headers)
+            response.raise_for_status()
+
+            # Create sanitized filename
+            filename = f'{episode_data["title"]} {date}.mp4'
+            safe_filename = self.sanitize_filename(filename)
+            filepath = os.path.join(download_dir, safe_filename)
+            
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+                print(f'Downloaded: {safe_filename}')
+            
+            # Update last download info
+            self.last_download = date
+            self.last_download_link = url
+
+        except requests.RequestException as e:
+            print(f'Error downloading episode: {e}')
+        except Exception as e:
+            print(f'Error: {e}')
+
+    def process_episode(self):
+        drive_url = self.get_drive_link(self.url)
+        if drive_url:
+            download_url = self.create_download_link()
+            if download_url:
+                self.download_episode(download_url)
+
+class createRss:
+    pass
+
 if __name__ == '__main__':
     c2c = C2CScrape()
-    c2c.create_download_link()
+    c2c.process_episode()
