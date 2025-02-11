@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "c2cscrape"
+version = "0.1.0"
+description = "scrape blog site for old c2c am episdodes and serve as rss"
+authors = ["Death916 <mail@trentnelson.dev>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+playwright = "^1.50.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
