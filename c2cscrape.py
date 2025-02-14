@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 import datetime
 import os
 import re
+import threading
+import time
+import random
 
 class C2CScrape:
     def __init__(self):
@@ -13,7 +16,7 @@ class C2CScrape:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-
+        self.episodes_downloaded = 0
     def sanitize_filename(self, filename):
         # Remove or replace invalid filename characters
         return re.sub(r'[<>:"/\\|?*]', '-', filename)
@@ -98,6 +101,8 @@ class C2CScrape:
             with open(filepath, 'wb') as f:
                 f.write(response.content)
                 print(f'Downloaded: {safe_filename}')
+            print('sleeping for 3-7 seconds')
+            time.sleep(random.randint(3,7))
             
             # Update last download info
             self.last_download = date
@@ -108,65 +113,90 @@ class C2CScrape:
         except Exception as e:
             print(f'Error: {e}')
 
+    def is_duplicate_file(self, soup):
+        try:
+            episode_data = self.get_episode_info(soup)
+            if not episode_data:
+                return False
+                
+            date = datetime.datetime.now().strftime('%Y-%m-%d')
+            filename = f'{episode_data["title"]} {date}.mp4'
+            safe_filename = self.sanitize_filename(filename)
+            filepath = os.path.join('downloads', safe_filename)
+            
+            return os.path.exists(filepath)
+            
+        except Exception as e:
+            print(f'Error checking duplicate: {e}')
+            return False
+
 
     def process_episode(self):
-        drive_url = self.get_drive_link(self.url)
-        if drive_url:
+        try:
+            drive_url = self.get_drive_link(self.url)  # This sets self.soup
+            if not drive_url:
+                return
+                
+            if self.is_duplicate_file(self.soup):
+                print('Episode already exists, skipping download')
+                return
+
             download_url = self.create_download_link()
             if download_url:
                 self.download_episode(download_url)
-
-class createRss:
-    def __init__(self):
-        self.episodes = []
-        self.feed = None
-        self.feed_title = 'Coast to Coast AM'
-        self.feed_link = 'https://zfirelight.blogspot.com/'
-        self.feed_description = 'Coast to Coast AM episodes'
-
-    def create_feed(self):
-        self.feed = f'<?xml version="1.0" encoding="UTF-8"?>\n'
-        self.feed += f'<rss version="2.0">\n'
-        self.feed += f'<channel>\n'
-        self.feed += f'<title>{self.feed_title}</title>\n'
-        self.feed += f'<link>{self.feed_link}</link>\n'
-        self.feed += f'<description>{self.feed_description}</description>\n'
-        for episode in self.episodes:
-            self.feed += f'<item>\n'
-            self.feed += f'<title>{episode["title"]}</title>\n'
-            self.feed += f'<link>{episode["url"]}</link>\n'
-            self.feed += f'<description>{episode["date"]}</description>\n'
-            self.feed += f'</item>\n'
-        self.feed += f'</channel>\n'
-        self.feed += f'</rss>\n'
-
-    def save_feed(self):
-        try:
-            with open('feed.xml', 'w') as f:
-                f.write(self.feed)
-                print('Feed saved')
+                self.episodes_downloaded += 1
+        except requests.RequestException as e:
+            print(f'Error processing episode: {e}')
         except Exception as e:
-            print(f'Error saving feed: {e}')
+            print(f'Error: {e}')
+       
 
-    def add_episode(self, episode):
-        self.episodes.append(episode)
 
-    def process_episodes(self):
-        c2c = C2CScrape()
-        response = requests.get(c2c.url, headers=c2c.headers)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        posts = soup.find_all('div', class_='post hentry')
-        for post in posts:
-            episode = c2c.get_episode_info(post)
-            if episode:
-                self.add_episode(episode)
-        self.create_feed()
-        self.save_feed()
+
+    # timer to check for new episodes every 12 hours
+    
+    # navigate to older posts button 5 times and get last 5 episodes with no repeats/ span id is blog-pager-older-link
+    def get_older_posts(self, limit=5):
+        try:
+            response = requests.get(self.url, headers=self.headers)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            older_posts = soup.find('span', id='blog-pager-older-link')
+            processed_urls = set()
+            posts_processed = 0
+            
+            while older_posts and posts_processed < limit:
+                older_link = older_posts.find('a')['href']
+                
+                if older_link in processed_urls:
+                    break
+                processed_urls.add(older_link)
+                
+                # Get the older posts page
+                self.url = older_link  # Update URL to use existing functions
+                print(f'Processing page: {older_link}')
+                
+                # Use existing process_episode method
+                self.process_episode()
+                posts_processed += 1
+                
+                # Get next page of older posts
+                response = requests.get(older_link, headers=self.headers)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                older_posts = soup.find('span', id='blog-pager-older-link')
+                
+        except requests.RequestException as e:
+            print(f'Error fetching older posts: {e}')
+        except Exception as e:
+            print(f'Error: {e}')
+
+
+
 
 if __name__ == '__main__':
     c2c = C2CScrape()
     c2c.process_episode()
-    rss = createRss()
-    rss.process_episodes()
+    c2c.get_older_posts()
+    print(f'Episodes downloaded: {c2c.episodes_downloaded}')
+    c2c.timer()
+    #rss = createRss()
+    #rss.process_episodes()
