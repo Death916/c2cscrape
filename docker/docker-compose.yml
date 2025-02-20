@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  c2c-scraper:
+    image: death916/c2cscrape:latest  
+    volumes:
+      - /mnt/media/media/books/audio/podcasts/C2C:/downloads
+      - /mnt/media/docker/volumes/c2cscrape
+    restart: unless-stopped
+    environment:
+      - TZ=America/Los_Angeles
+
+
+

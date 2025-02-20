@@ -84,3 +84,8 @@ poetry.lock
 podcast_feed.xml
 feed.xml
 video_feed.xml
+uv.lock
+*.svg
+
+old.pyproject.toml
+.github

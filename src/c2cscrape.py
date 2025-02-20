@@ -17,6 +17,7 @@ class C2CScrape:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         self.episodes_downloaded = 0
+        self.download_location = '/downloads'
     def sanitize_filename(self, filename):
         # Remove or replace invalid filename characters
         return re.sub(r'[<>:"/\\|?*]', '-', filename)
@@ -78,7 +79,7 @@ class C2CScrape:
                 return
 
             # Create downloads directory if it doesn't exist
-            download_dir = 'downloads'
+            download_dir = '/downloads'
             os.makedirs(download_dir, exist_ok=True)
 
             # Get current date
@@ -154,7 +155,17 @@ class C2CScrape:
 
 
     # timer to check for new episodes every 12 hours
+    def timer(self):
     
+        try:
+            # Run our core operations
+            self.process_episode()
+            self.get_older_posts()
+            print(f'Episodes downloaded: {self.episodes_downloaded}')
+        finally:
+            # Ensure timer restarts even if there's an error
+            print("waiting 12 hours")
+            threading.Timer(43200, self.timer).start()  # 43200 sec = 12 hours
     # navigate to older posts button 5 times and get last 5 episodes with no repeats/ span id is blog-pager-older-link
     def get_older_posts(self, limit=5):
         try:
@@ -194,9 +205,15 @@ class C2CScrape:
 
 if __name__ == '__main__':
     c2c = C2CScrape()
-    c2c.process_episode()
-    c2c.get_older_posts()
-    print(f'Episodes downloaded: {c2c.episodes_downloaded}')
+    # Start initial timer immediately
     c2c.timer()
+    # Keep main thread alive with minimal resource usage
+    try:
+        while True:
+            time.sleep(3600)  # Check once per hour
+    except KeyboardInterrupt:
+        print("\nStopping scheduled downloads...")
+    print(f'Episodes downloaded: {c2c.episodes_downloaded}')
+    
     #rss = createRss()
     #rss.process_episodes()
