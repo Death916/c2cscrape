@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY . .
+COPY src/c2cscrape.py .
 
 # Set hardcoded download path
 ENV DOWNLOAD_DIR=/downloads
