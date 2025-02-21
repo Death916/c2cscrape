@@ -1,0 +1,22 @@
+FROM python:3.11-slim
+
+# Set timezone
+ENV TZ=America/Los_Angeles
+RUN apt-get update && apt-get install -y tzdata
+
+# Create app directory
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY src/c2cscrape.py .
+
+# Set hardcoded download path
+ENV DOWNLOAD_DIR=/downloads
+
+# Start the scraper
+CMD ["python", "-u", "c2cscrape.py"]
+
