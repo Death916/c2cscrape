@@ -106,6 +106,7 @@ class C2CScrape:
             time.sleep(random.randint(3,7))
             
             # Update last download info
+            self.episodes_downloaded += 1
             self.last_download = date
             self.last_download_link = url
 
@@ -145,7 +146,7 @@ class C2CScrape:
             download_url = self.create_download_link()
             if download_url:
                 self.download_episode(download_url)
-                self.episodes_downloaded += 1
+                
         except requests.RequestException as e:
             print(f'Error processing episode: {e}')
         except Exception as e:
