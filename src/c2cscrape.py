@@ -210,6 +210,8 @@ if __name__ == '__main__':
     # Keep main thread alive with minimal resource usage
     try:
         while True:
+            print("waiting for timer")
+            print("time is: ", datetime.datetime.now())
             time.sleep(3600)  # Check once per hour
     except KeyboardInterrupt:
         print("\nStopping scheduled downloads...")
