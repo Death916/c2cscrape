@@ -86,7 +86,7 @@ class C2CScrape:
             date = datetime.datetime.now().strftime('%Y-%m-%d')
 
             # Create sanitized filename
-            filename = f'{episode_data["title"]} {date}.mp4'
+            filename = f'{episode_data["title"]}.mp4'
             safe_filename = self.sanitize_filename(filename)
             filepath = os.path.join(download_dir, safe_filename)
 
