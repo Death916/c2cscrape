@@ -157,13 +157,19 @@ class C2CScrape:
 
     # timer to check for new episodes every 12 hours
     def timer(self):
-    
+        #reset base url
+        self.url = 'https://zfirelight.blogspot.com/'
+        original_url = self.url
         try:
             # Run our core operations
             self.process_episode()
             self.get_older_posts()
             print(f'Episodes downloaded: {self.episodes_downloaded}')
         finally:
+            self.url = original_url
+            self.last_download = None
+            self.last_download_link = None
+            self.episodes_downloaded = 0
             # Ensure timer restarts even if there's an error
             print("waiting 12 hours")
             threading.Timer(43200, self.timer).start()  # 43200 sec = 12 hours
