@@ -9,7 +9,8 @@ import random
 
 class C2CScrape:
     def __init__(self):
-        self.url = 'https://zfirelight.blogspot.com/'
+        self.base_url = 'https://zfirelight.blogspot.com/'
+        self.current_url = self.base_url
         self.episodes = []
         self.last_download = None
         self.last_download_link = None
@@ -135,7 +136,7 @@ class C2CScrape:
 
     def process_episode(self):
         try:
-            drive_url = self.get_drive_link(self.url)  # This sets self.soup
+            drive_url = self.get_drive_link(self.current_url)  # This sets self.soup
             if not drive_url:
                 return
                 
@@ -160,17 +161,21 @@ class C2CScrape:
     
         try:
             # Run our core operations
+            self.current_url = self.base_url
             self.process_episode()
             self.get_older_posts()
             print(f'Episodes downloaded: {self.episodes_downloaded}')
         finally:
             # Ensure timer restarts even if there's an error
             print("waiting 12 hours")
+            self.episodes_downloaded = 0
+            self.last_download = None
+            
             threading.Timer(43200, self.timer).start()  # 43200 sec = 12 hours
     # navigate to older posts button 5 times and get last 5 episodes with no repeats/ span id is blog-pager-older-link
     def get_older_posts(self, limit=5):
         try:
-            response = requests.get(self.url, headers=self.headers)
+            response = requests.get(self.current_url, headers=self.headers)
             soup = BeautifulSoup(response.text, 'html.parser')
             older_posts = soup.find('span', id='blog-pager-older-link')
             processed_urls = set()
@@ -184,7 +189,7 @@ class C2CScrape:
                 processed_urls.add(older_link)
                 
                 # Get the older posts page
-                self.url = older_link  # Update URL to use existing functions
+                self.current_url = older_link  # Update URL to use existing functions
                 print(f'Processing page: {older_link}')
                 
                 # Use existing process_episode method
