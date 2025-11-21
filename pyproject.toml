@@ -1,17 +1,10 @@
 [project]
 name = "c2cscrape"
 version = "0.1.0"
-description = "scrape blog site for old c2c am episdodes and serve as rss"
-authors = [{ name = "Death916", email = "mail@trentnelson.dev" }]
-source = "src"
+description = "Add your description here"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "bs4>=0.0.2",
-    "feedgen>=1.0.0",
-    "playwright>=1.50.0",
-    "requests>=2.32.3",
+    "requests>=2.32.5",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
