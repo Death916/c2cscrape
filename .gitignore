@@ -89,3 +89,4 @@ uv.lock
 
 old.pyproject.toml
 .github
+.flox
