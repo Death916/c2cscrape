@@ -5,7 +5,9 @@ import logging
 import os
 import random
 import re
+from this import d
 import time
+from turtle import done
 
 import qbittorrentapi as qbapi
 import requests
@@ -48,6 +50,7 @@ class TorrentScrape:
             return None
 
     def get_torrent_link(self):
+        links = []
         page = self.get_torrent_page()
         if not page:
             logging.error("No page found")
@@ -82,6 +85,7 @@ class TorrentScrape:
                     )
                     continue
                 link = a.get("href")
+                links.append(link)
                 self.episodes_downloaded += 1
                 logging.info(f"found episode {title}")
                 logging.debug(f"link: {link}")
@@ -89,7 +93,7 @@ class TorrentScrape:
             logging.info("done")
             logging.info(f"Downloaded {self.episodes_downloaded} episodes")
             logging.info("Returning link to qbit")
-            return link  # need to return link later to qbit but need to decide logic
+            return links  # need to return link later to qbit but need to decide logic
 
 
 class Qbittorrent:
@@ -109,30 +113,35 @@ class Qbittorrent:
         if not self.username or not self.password:
             raise ValueError("QB_USERNAME and QB_PASSWORD must be set in .env file")
 
-    def add_torrent(self, link):
+    def add_torrent(self, links):
         conn_info = dict(
             host=self.host,
             port=self.port,
             username=self.username,
             password=self.password,
         )
+        logging.info(f"Logging in as {self.username} to host {self.host}:{self.port}")
         torrent = qbapi.Client(**conn_info)
         try:
             torrent.auth_log_in()
             logging.info("Logged in to qbittorrent")
+            logging.info(f"qbittorrent version: {torrent.app.version}")
 
         except qbapi.LoginFailed:
             logging.error("Failed to login to qbittorrent")
             raise
-        except Exception as e:
-            logging.error(f"Error adding torrent to qbittorrent: {e}")
-            raise
+
+        for link in links:
+            try:
+                torrent.torrents_add(urls=link,download_path=)
+                logging.info(f"Added torrent {link} to qbittorrent")
+            except Exception as e:
+                logging.error(f"Error adding torrent {link} to qbittorrent: {e}")
+                raise
 
 
 def main():
-    qbit = Qbittorrent()
-    qbit.get_credentials()
-    qbit.add_torrent(link)
+    pass
 
 
 if __name__ == "__main__":
