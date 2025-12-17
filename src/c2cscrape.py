@@ -144,9 +144,9 @@ def main():
 
 
 if __name__ == "__main__":
-    c2c = TorrentScrape()
+    scraper = TorrentScrape()
     # c2c.get_torrent_link()
-    link = c2c.get_torrent_link()
+    link = scraper.get_torrent_link()
     torrent = Qbittorrent()
     torrent.get_credentials()
     torrent.add_torrent(link)
