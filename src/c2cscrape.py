@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 
 import datetime
+import logging
 import os
 import random
 import re
 import time
 
+import qbittorrentapi as qb
 import requests
 from bs4 import BeautifulSoup
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class TorrentScrape:
@@ -31,16 +39,17 @@ class TorrentScrape:
         try:
             response = requests.get(self.url, headers=self.headers)
             response.raise_for_status()
-            print(response)
+            logging.info(f"Page fetched successfully")
+            logging.debug(f"Response status code: {response.status_code}")
             return response.text
         except requests.RequestException as e:
-            print(f"Error fetching page: {e}")
+            logging.error(f"Error fetching page: {e}")
             return None
 
     def get_episode_info(self):
         page = self.get_torrent_page()
         if not page:
-            print("No page found")
+            logging.error("No page found")
             return None
 
         soup = BeautifulSoup(page, "html.parser")
@@ -56,7 +65,7 @@ class TorrentScrape:
                 f"Found {len(episode_elems)} episode elements using selector .text-wrap.w-100"
             )
             if len(episode_elems) > self.download_amount:
-                print(
+                logging.info(
                     f"Too many episodes found, only downloading last {self.download_amount}"
                 )
                 episode_elems = episode_elems[: self.download_amount]
@@ -67,19 +76,38 @@ class TorrentScrape:
                 title = a.get("title") or a.get_text(strip=True)
                 # skip episodes that don't start with "Coast" as sometimes they show up in search
                 if not title.startswith("Coast"):
-                    print(f"Skipping episode {title}")
+                    logging.warning(
+                        f"Skipping episode {title}, as it doesn't start with 'Coast'"
+                    )
                     continue
                 link = a.get("href")
                 self.episodes_downloaded += 1
-                print(f"found episode {title}")
-                # print(f"link: {link}")
+                logging.info(f"found episode {title}")
+                logging.debug(f"link: {link}")
 
-            print("done")
-            return  # need to return link later to qbit but need to decide logic
+            logging.info("done")
+            logging.info(f"Downloaded {self.episodes_downloaded} episodes")
+            logging.info("Returning link to qbit")
+            return link  # need to return link later to qbit but need to decide logic
 
 
 class Qbittorrent:
-    pass
+    def __init__(self):
+        self.username = ""
+        self.password = ""
+        self.host = "localhost"
+        self.port = 8080
+
+    def get_credentials(self):
+        # Get qbittorrent credentials from .env file
+        self.username = os.getenv("QB_USERNAME")
+        self.password = os.getenv("QB_PASSWORD")
+        if not self.username or not self.password:
+            raise ValueError("QB_USERNAME and QB_PASSWORD must be set in .env file")
+
+    def add_torrent(self, link):
+        # Add torrent to qbittorrent
+        pass
 
 
 if __name__ == "__main__":
@@ -97,5 +125,3 @@ if __name__ == "__main__":
         print("\nStopping scheduled downloads...")
     print(f"Episodes downloaded: {c2c.episodes_downloaded}")
 """
-# rss = createRss()
-# rss.process_episodes()
