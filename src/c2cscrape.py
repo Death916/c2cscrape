@@ -5,9 +5,7 @@ import logging
 import os
 import random
 import re
-from this import d
 import time
-from turtle import done
 
 import qbittorrentapi as qbapi
 import requests
@@ -110,6 +108,7 @@ class Qbittorrent:
         self.password = os.getenv("QB_PASSWORD")
         self.host = os.getenv("QB_HOST")
         self.port = os.getenv("QB_PORT")
+        self.download_path = os.getenv("QB_DOWNLOAD_PATH")
         if not self.username or not self.password:
             raise ValueError("QB_USERNAME and QB_PASSWORD must be set in .env file")
 
@@ -133,7 +132,7 @@ class Qbittorrent:
 
         for link in links:
             try:
-                torrent.torrents_add(urls=link,download_path=)
+                torrent.torrents_add(urls=link, save_path=self.download_path)
                 logging.info(f"Added torrent {link} to qbittorrent")
             except Exception as e:
                 logging.error(f"Error adding torrent {link} to qbittorrent: {e}")
