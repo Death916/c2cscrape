@@ -8,6 +8,7 @@ pkgs.mkShell {
     python313Packages.uv
     python313Packages.ninja
     python313Packages.numpy
+    python313Packages.ipython
     bun
 
   ];

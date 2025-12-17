@@ -7,9 +7,10 @@ import random
 import re
 import time
 
-import qbittorrentapi as qb
+import qbittorrentapi as qbapi
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +47,7 @@ class TorrentScrape:
             logging.error(f"Error fetching page: {e}")
             return None
 
-    def get_episode_info(self):
+    def get_torrent_link(self):
         page = self.get_torrent_page()
         if not page:
             logging.error("No page found")
@@ -100,19 +101,47 @@ class Qbittorrent:
 
     def get_credentials(self):
         # Get qbittorrent credentials from .env file
+        load_dotenv()  # gets credentials from env file
         self.username = os.getenv("QB_USERNAME")
         self.password = os.getenv("QB_PASSWORD")
+        self.host = os.getenv("QB_HOST")
+        self.port = os.getenv("QB_PORT")
         if not self.username or not self.password:
             raise ValueError("QB_USERNAME and QB_PASSWORD must be set in .env file")
 
     def add_torrent(self, link):
-        # Add torrent to qbittorrent
-        pass
+        conn_info = dict(
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+        )
+        torrent = qbapi.Client(**conn_info)
+        try:
+            torrent.auth_log_in()
+            logging.info("Logged in to qbittorrent")
+
+        except qbapi.LoginFailed:
+            logging.error("Failed to login to qbittorrent")
+            raise
+        except Exception as e:
+            logging.error(f"Error adding torrent to qbittorrent: {e}")
+            raise
+
+
+def main():
+    qbit = Qbittorrent()
+    qbit.get_credentials()
+    qbit.add_torrent(link)
 
 
 if __name__ == "__main__":
     c2c = TorrentScrape()
-    c2c.get_episode_info()
+    # c2c.get_torrent_link()
+    link = c2c.get_torrent_link()
+    torrent = Qbittorrent()
+    torrent.get_credentials()
+    torrent.add_torrent(link)
     # Keep main thread alive with minimal resource usage
 """
     try:
