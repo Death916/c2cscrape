@@ -40,6 +40,10 @@ class TorrentScrape:
             return None
 
     def get_torrent_link(self):
+        """
+        Get torrent link from page
+        Returns a list of torrent links
+        """
         links = []
         page = self.get_torrent_page()
         if not page:
@@ -92,7 +96,7 @@ class Qbittorrent:
         self.port = 8080
 
     def get_credentials(self):
-        # Get qbittorrent credentials from .env file
+        """Get qbittorrent credentials from .env file"""
         load_dotenv()  # gets credentials from env file
         self.username = os.getenv("QB_USERNAME")
         self.password = os.getenv("QB_PASSWORD")
@@ -103,6 +107,10 @@ class Qbittorrent:
             raise ValueError("QB_USERNAME and QB_PASSWORD must be set in .env file")
 
     def add_torrent(self, links):
+        """
+        Add torrents to qbittorrent
+        Takes a list of links and adds them to qbittorrent
+        """
         conn_info = dict(
             host=self.host,
             port=self.port,
