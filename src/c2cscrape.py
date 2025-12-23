@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 
-import datetime
 import logging
 import os
-import random
-import re
-import time
 
 import qbittorrentapi as qbapi
 import requests
@@ -31,10 +27,6 @@ class TorrentScrape:
         }
         self.episodes_downloaded = 0
         self.download_location = "/downloads"
-
-    def sanitize_filename(self, filename):
-        # Remove or replace invalid filename characters
-        return re.sub(r'[<>:"/\\|?*]', "-", filename)
 
     def get_torrent_page(self):
         try:
@@ -63,9 +55,7 @@ class TorrentScrape:
 
         episode_elems = main_class.select(".text-wrap.w-100")
         if episode_elems:
-            print(
-                f"Found {len(episode_elems)} episode elements using selector .text-wrap.w-100"
-            )
+            print(f"Found {len(episode_elems)} episodes")
             if len(episode_elems) > self.download_amount:
                 logging.info(
                     f"Too many episodes found, only downloading last {self.download_amount}"
@@ -125,6 +115,8 @@ class Qbittorrent:
             torrent.auth_log_in()
             logging.info("Logged in to qbittorrent")
             logging.info(f"qbittorrent version: {torrent.app.version}")
+            torrent.auth_log_out()
+            logging.info("Logged out of qbittorrent")
 
         except qbapi.LoginFailed:
             logging.error("Failed to login to qbittorrent")
@@ -133,7 +125,7 @@ class Qbittorrent:
         for link in links:
             try:
                 torrent.torrents_add(urls=link, save_path=self.download_path)
-                logging.info(f"Added torrent {link} to qbittorrent")
+                logging.info(f"Added torrent {link}  to qbittorrent")
             except Exception as e:
                 logging.error(f"Error adding torrent {link} to qbittorrent: {e}")
                 raise
@@ -150,7 +142,6 @@ if __name__ == "__main__":
     torrent = Qbittorrent()
     torrent.get_credentials()
     torrent.add_torrent(link)
-    # Keep main thread alive with minimal resource usage
 """
     try:
         while True:
