@@ -135,7 +135,10 @@ class Qbittorrent:
             try:
                 self.download_path = self.download_path + "/"
                 torrent.torrents_add(urls=link, save_path=self.download_path)
-                torrent.torrents_add(urls=link, save_path=self.download_path, content_layout=self.content_layout)
+                torrent.torrents_add(
+                    urls=link,
+                    save_path=self.download_path,
+                )
                 logging.info(f"Added torrent {link}  to qbittorrent")
             except Exception as e:
                 logging.error(f"Error adding torrent {link} to qbittorrent: {e}")
