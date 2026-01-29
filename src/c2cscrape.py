@@ -87,6 +87,179 @@ class TorrentScrape:
             logging.info("Returning link to qbit")
             return links  # need to return link later to qbit but need to decide logic
 
+    def generate_nfo_content(self, content):
+        lines = [line.strip() for line in content.splitlines()]
+        # Remove separator lines if present
+        lines = [line for line in lines if not set(line).issubset({"-"}) and line]
+
+        info = {
+            "title": "Unknown Title",
+            "host": "Unknown Host",
+            "guests": [],
+            "date": "Unknown Date",
+            "description": "",
+        }
+
+        # Heuristic parsing
+        if lines:
+            info["title"] = lines[0]
+
+        desc_lines = []
+        parsing_desc = False
+
+        for i, line in enumerate(lines):
+            if i == 0:
+                continue
+
+            lower_line = line.lower()
+            if lower_line.startswith("hosted by"):
+                info["host"] = line.split("by", 1)[1].strip()
+            elif lower_line.startswith("host:"):
+                info["host"] = line.split(":", 1)[1].strip()
+            elif lower_line.startswith("guests:") or lower_line.startswith("guest:"):
+                if ":" in line:
+                    val = line.split(":", 1)[1].strip()
+                    if val:
+                        info["guests"].append(val)
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1]
+                    # Check if next line is a date or month, if not, assume it's a guest continuation
+                    is_date = any(
+                        x in next_line.lower()
+                        for x in [
+                            "friday",
+                            "monday",
+                            "tuesday",
+                            "wednesday",
+                            "thursday",
+                            "saturday",
+                            "sunday",
+                            "january",
+                            "february",
+                            "march",
+                            "april",
+                            "may",
+                            "june",
+                            "july",
+                            "august",
+                            "september",
+                            "october",
+                            "november",
+                            "december",
+                        ]
+                    )
+                    if not is_date:
+                        info["guests"].append(next_line)
+
+            elif any(
+                day in lower_line
+                for day in [
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                    "sunday",
+                ]
+            ) and any(
+                month in lower_line
+                for month in [
+                    "january",
+                    "february",
+                    "march",
+                    "april",
+                    "may",
+                    "june",
+                    "july",
+                    "august",
+                    "september",
+                    "october",
+                    "november",
+                    "december",
+                ]
+            ):
+                info["date"] = line
+                parsing_desc = True
+            elif parsing_desc:
+                desc_lines.append(line)
+            # Fallback for simple format: if we are deep in file and haven't found date, treat as description
+            elif not parsing_desc and i > 3 and not info.get("date") == "Unknown Date":
+                desc_lines.append(line)
+
+        info["description"] = "\n".join(desc_lines)
+
+        # Copyright year extraction
+        year = "202X"
+        if "," in info["date"]:
+            try:
+                year = info["date"].split(",")[-1].strip()
+            except:
+                pass
+
+        nfo_template = f"""General Information
+===================
+ Title:                  {info["title"]}
+ Author:                 Coast to Coast AM
+ Read By:                {info["host"]}
+ Copyright:              (c){year} Premiere Networks
+ Genre:                  Talk Radio / Paranormal
+ Publisher:              Coast to Coast AM
+ Duration:               04:00:00 (Approx)
+
+Media Information
+=================
+ Source Format:          MP3
+ Source Sample Rate:     44100 Hz
+ Source Channels:        2
+ Source Bitrate:         64 kbits
+
+ Encoded Codec:          MP3
+ Encoded Sample Rate:    44100 Hz
+ Encoded Channels:       2
+ Encoded Bitrate:        64 kbits
+
+Book Description
+================
+{info["description"]}
+
+Guest(s): {", ".join(info["guests"])}
+"""
+        return nfo_template
+
+    def add_nfo(self):
+        """Add nfo file to episode folders by reading the downloaded .txt"""
+        if not os.path.exists(self.download_location):
+            logging.warning(
+                f"Download path {self.download_location} does not exist. Skipping NFO generation."
+            )
+            return
+
+        logging.info(
+            f"Scanning {self.download_location} for .txt files to generate .nfo..."
+        )
+
+        for root, dirs, files in os.walk(self.download_location):
+            for file in files:
+                if file.endswith(".txt") and not file.endswith("_debug.txt"):
+                    txt_path = os.path.join(root, file)
+                    nfo_path = os.path.splitext(txt_path)[0] + ".nfo"
+
+                    if os.path.exists(nfo_path):
+                        continue
+
+                    try:
+                        with open(txt_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+
+                        nfo_content = self.generate_nfo_content(content)
+                        if nfo_content:
+                            with open(nfo_path, "w", encoding="utf-8") as f:
+                                f.write(nfo_content)
+                            logging.info(f"Created NFO: {nfo_path}")
+                    except Exception as e:
+                        logging.error(f"Failed to create NFO for {txt_path}: {e}")
+
 
 class Qbittorrent:
     def __init__(self):
@@ -155,7 +328,11 @@ if __name__ == "__main__":
     link = scraper.get_torrent_link()
     torrent = Qbittorrent()
     torrent.get_credentials()
-    torrent.add_torrent(link)
+    if link:
+        torrent.add_torrent(link)
+
+    # Process NFOs for existing downloads
+    scraper.add_nfo()
 """
     try:
         while True:
