@@ -94,8 +94,7 @@ class Qbittorrent:
         self.password = ""
         self.host = "localhost"
         self.port = 8080
-        self.content_layout = "NoSubfolder"
-
+        self.download_path: str = ""
 
     def get_credentials(self):
         """Get qbittorrent credentials from .env file"""
@@ -134,6 +133,8 @@ class Qbittorrent:
 
         for link in links:
             try:
+                self.download_path = self.download_path + "/"
+                torrent.torrents_add(urls=link, save_path=self.download_path)
                 torrent.torrents_add(urls=link, save_path=self.download_path, content_layout=self.content_layout)
                 logging.info(f"Added torrent {link}  to qbittorrent")
             except Exception as e:
