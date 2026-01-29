@@ -19,7 +19,7 @@ class TorrentScrape:
     def __init__(self):
         self.url = "https://knaben.org/search/coast%20to%20coast%20am/0/1/date"
         self.episodes = []
-        self.download_amount = 5
+        self.download_amount: int = 5
         self.last_download = None
         self.last_download_link = None
         self.headers = {
@@ -133,12 +133,12 @@ class Qbittorrent:
 
         for link in links:
             try:
+                # "/" added for creating subdir so abs finds properly
                 self.download_path = self.download_path + "/"
-                torrent.torrents_add(urls=link, save_path=self.download_path)
                 torrent.torrents_add(
-                    urls=link,
-                    save_path=self.download_path,
+                    urls=link, save_path=self.download_path, seeding_time_limit=1
                 )
+
                 logging.info(f"Added torrent {link}  to qbittorrent")
             except Exception as e:
                 logging.error(f"Error adding torrent {link} to qbittorrent: {e}")
