@@ -230,7 +230,7 @@ Guest(s): {", ".join(info["guests"])}
     def add_nfo(self):
         """Add nfo file to episode folders by reading the downloaded .txt"""
         # Ensure we are using the path from the environment
-        download_location = os.getenv("QB_DOWNLOAD_PATH")
+        download_location = os.getenv("QB_DOWNLOAD_PATH") or self.download_location
 
         if not download_location:
             logging.warning("QB_DOWNLOAD_PATH is not set. Skipping NFO generation.")
