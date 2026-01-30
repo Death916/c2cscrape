@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 
 import qbittorrentapi as qbapi
 import requests
@@ -260,6 +261,51 @@ Guest(s): {", ".join(info["guests"])}
                             content = f.read()
 
                         nfo_content = self.generate_nfo_content(content)
+
+                        # Try to extract date from an mp3 filename in the same folder that begins with "Coast-"
+                        date_str = None
+                        try:
+                            for fname in files:
+                                # Look for mp3 files named like "Coast-YYYY-MM-DD.mp3"
+                                if fname.lower().startswith(
+                                    "coast-"
+                                ) and fname.lower().endswith(".mp3"):
+                                    # split once on the first hyphen to preserve any extra hyphens in other parts
+                                    try:
+                                        date_str = fname.split("-", 1)[1].rsplit(
+                                            ".", 1
+                                        )[0]
+                                        # basic sanity check: date contains digits and hyphens
+                                        if not any(ch.isdigit() for ch in date_str):
+                                            date_str = None
+                                        else:
+                                            break
+                                    except Exception:
+                                        date_str = None
+                                        continue
+                        except Exception:
+                            date_str = None
+
+                        # Removed fallback: do not extract date from the .txt filename.
+                        # Only mp3 filenames (e.g. Coast-YYYY-MM-DD.mp3) will be used to derive the date.
+
+                        # If we found a date, append it to the Title line in the generated content.
+                        if nfo_content and date_str:
+                            try:
+                                # Replace the Title line while keeping spacing/prefix intact
+                                # Matches a line like " Title:                  Some title"
+                                nfo_content = re.sub(
+                                    r"(^\s*Title:\s*)(.+)$",
+                                    lambda m: f"{m.group(1)}{m.group(2)} - {date_str}",
+                                    nfo_content,
+                                    flags=re.M,
+                                )
+                            except Exception:
+                                # If replacement fails, leave content unchanged and continue
+                                logging.debug(
+                                    f"Failed to append date to Title for {txt_path}"
+                                )
+
                         if nfo_content:
                             with open(desc_path, "w", encoding="utf-8") as f:
                                 f.write(nfo_content)
