@@ -229,17 +229,22 @@ Guest(s): {", ".join(info["guests"])}
 
     def add_nfo(self):
         """Add nfo file to episode folders by reading the downloaded .txt"""
-        if not os.path.exists(self.download_location):
+        # Ensure we are using the path from the environment
+        download_location = os.getenv("QB_DOWNLOAD_PATH")
+
+        if not download_location:
+            logging.warning("QB_DOWNLOAD_PATH is not set. Skipping NFO generation.")
+            return
+
+        if not os.path.exists(download_location):
             logging.warning(
-                f"Download path {self.download_location} does not exist. Skipping NFO generation."
+                f"Download path {download_location} does not exist. Skipping NFO generation."
             )
             return
 
-        logging.info(
-            f"Scanning {self.download_location} for .txt files to generate .nfo..."
-        )
+        logging.info(f"Scanning {download_location} for .txt files to generate .nfo...")
 
-        for root, dirs, files in os.walk(self.download_location):
+        for root, dirs, files in os.walk(download_location):
             for file in files:
                 if file.endswith(".txt") and not file.endswith("_debug.txt"):
                     txt_path = os.path.join(root, file)
