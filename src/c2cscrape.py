@@ -242,15 +242,17 @@ Guest(s): {", ".join(info["guests"])}
             )
             return
 
-        logging.info(f"Scanning {download_location} for .txt files to generate .nfo...")
+        logging.info(
+            f"Scanning {download_location} for .txt files to generate desc.txt..."
+        )
 
         for root, dirs, files in os.walk(download_location):
             for file in files:
                 if file.endswith(".txt") and not file.endswith("_debug.txt"):
                     txt_path = os.path.join(root, file)
-                    nfo_path = os.path.splitext(txt_path)[0] + ".nfo"
+                    desc_path = os.path.join(root, "desc.txt")
 
-                    if os.path.exists(nfo_path):
+                    if os.path.exists(desc_path):
                         continue
 
                     try:
@@ -259,11 +261,11 @@ Guest(s): {", ".join(info["guests"])}
 
                         nfo_content = self.generate_nfo_content(content)
                         if nfo_content:
-                            with open(nfo_path, "w", encoding="utf-8") as f:
+                            with open(desc_path, "w", encoding="utf-8") as f:
                                 f.write(nfo_content)
-                            logging.info(f"Created NFO: {nfo_path}")
+                            logging.info(f"Created desc.txt: {desc_path}")
                     except Exception as e:
-                        logging.error(f"Failed to create NFO for {txt_path}: {e}")
+                        logging.error(f"Failed to create desc.txt for {txt_path}: {e}")
 
 
 class Qbittorrent:
@@ -314,7 +316,7 @@ class Qbittorrent:
                 # "/" added for creating subdir so abs finds properly
                 self.download_path = self.download_path + "/"
                 torrent.torrents_add(
-                    urls=link, save_path=self.download_path, seeding_time_limit=1
+                    urls=link, save_path=self.download_path, seeding_time_limit=2
                 )
 
                 logging.info(f"Added torrent {link}  to qbittorrent")
