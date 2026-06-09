@@ -366,6 +366,8 @@ class Qbittorrent:
                 )
 
                 logging.info(f"Added torrent {link}  to qbittorrent")
+            except qbapi.exceptions.Conflict409Error:
+                logging.info(f"Torrent {link} already exists in qbittorrent, skipping.")
             except Exception as e:
                 logging.error(f"Error adding torrent {link} to qbittorrent: {e}")
                 raise
